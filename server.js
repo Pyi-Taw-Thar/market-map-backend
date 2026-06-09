@@ -9,7 +9,13 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,
+  process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  'http://localhost:5173',
+].filter(Boolean);
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -19,6 +25,11 @@ app.get('/', (req, res) => {
 app.use('/api/shops', shopRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export default app;
