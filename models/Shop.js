@@ -25,6 +25,11 @@ const shopSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     location: {
       lat: {
         type: Number,

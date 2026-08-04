@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
-    const { shopName, ownerName, address, ownerBirthday, notes, location } = req.body;
+    const { shopName, ownerName, address, ownerBirthday, notes, phoneNumber, location } = req.body;
 
     const shop = new Shop({
       shopName,
@@ -13,6 +13,7 @@ router.post('/', async (req, res) => {
       address,
       ownerBirthday,
       notes,
+      phoneNumber,
       location,
     });
 
