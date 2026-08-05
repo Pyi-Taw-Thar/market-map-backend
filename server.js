@@ -13,11 +13,13 @@ connectDB();
 
 const app = express();
 
-const allowedOrigins = [
-  process.env.CORS_ORIGIN,
-  process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-  "http://localhost:5173",
-].filter(Boolean);
+const allowedOrigins = ["*"];
+
+// const allowedOrigins = [
+//   process.env.CORS_ORIGIN,
+//   process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+//   "http://localhost:5173",
+// ].filter(Boolean);
 
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
