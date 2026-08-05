@@ -13,15 +13,25 @@ connectDB();
 
 const app = express();
 
-const allowedOrigins = ["*"];
+const allowedOrigins = [
+  "https://marketingsoftware.netlify.app",
+  "http://localhost:5173",
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
 
-// const allowedOrigins = [
-//   process.env.CORS_ORIGIN,
-//   process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-//   "http://localhost:5173",
-// ].filter(Boolean);
-
-app.use(cors({ origin: allowedOrigins }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // origin မပါတဲ့ request များ (eg. Mobile apps/Postman) သို့မဟုတ် allowedOrigins ထဲပါရင် ခွင့်ပြုမည်
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.get("/", (req, res) => {
