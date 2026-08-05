@@ -40,6 +40,7 @@ router.get('/upcoming-birthdays', async (req, res) => {
     today.setHours(0, 0, 0, 0);
     
     const upcomingBirthdays = shops.filter(shop => {
+      if (!shop.ownerBirthday) return false;
       const birthday = new Date(shop.ownerBirthday);
       const currentYear = today.getFullYear();
       
@@ -72,6 +73,19 @@ router.get('/upcoming-birthdays', async (req, res) => {
     }).sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday);
     
     res.json(upcomingBirthdays);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+    await Shop.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Shop deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -18,7 +18,7 @@ const shopSchema = new mongoose.Schema(
     },
     ownerBirthday: {
       type: Date,
-      required: [true, 'Owner birthday is required'],
+      required: false,
     },
     notes: {
       type: String,
