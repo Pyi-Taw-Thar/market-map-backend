@@ -5,11 +5,12 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
-    const { shopName, ownerName, address, ownerBirthday, notes, location } = req.body;
+    const { shopName, ownerName, phoneNumber, address, ownerBirthday, notes, location } = req.body;
 
     const shop = new Shop({
       shopName,
       ownerName,
+      phoneNumber,
       address,
       ownerBirthday,
       notes,
@@ -71,6 +72,54 @@ router.get('/upcoming-birthdays', async (req, res) => {
     }).sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday);
     
     res.json(upcomingBirthdays);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+    res.json(shop);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const { shopName, ownerName, phoneNumber, address, ownerBirthday, notes, location } = req.body;
+    const shop = await Shop.findById(req.params.id);
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+
+    if (shopName !== undefined) shop.shopName = shopName;
+    if (ownerName !== undefined) shop.ownerName = ownerName;
+    if (phoneNumber !== undefined) shop.phoneNumber = phoneNumber;
+    if (address !== undefined) shop.address = address;
+    if (ownerBirthday !== undefined) shop.ownerBirthday = ownerBirthday ? new Date(ownerBirthday) : null;
+    if (notes !== undefined) shop.notes = notes;
+    if (location !== undefined) shop.location = location;
+
+    const updatedShop = await shop.save();
+    res.json(updatedShop);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+    await Shop.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Shop deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
