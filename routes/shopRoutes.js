@@ -5,14 +5,16 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
-    const { shopName, ownerName, phoneNumber, address, ownerBirthday, notes, location } = req.body;
+    const { shopName, ownerName, phoneNumber, state, township, address, ownerBirthday, notes, location } = req.body;
 
     const shop = new Shop({
       shopName,
       ownerName,
       phoneNumber,
+      state: state || '',
+      township: township || '',
       address,
-      ownerBirthday,
+      ownerBirthday: ownerBirthday ? new Date(ownerBirthday) : null,
       notes,
       location,
     });
@@ -26,7 +28,29 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const shops = await Shop.find({}).sort({ createdAt: -1 });
+    const { state, township, search } = req.query;
+    const filter = {};
+
+    if (state && state.trim()) {
+      filter.state = state.trim();
+    }
+
+    if (township && township.trim()) {
+      filter.township = township.trim();
+    }
+
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      filter.$or = [
+        { shopName: searchRegex },
+        { ownerName: searchRegex },
+        { address: searchRegex },
+        { township: searchRegex },
+        { state: searchRegex },
+      ];
+    }
+
+    const shops = await Shop.find(filter).sort({ createdAt: -1 });
     res.json(shops);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -35,12 +59,14 @@ router.get('/', async (req, res) => {
 
 router.get('/upcoming-birthdays', async (req, res) => {
   try {
-    const shops = await Shop.find({});
+    const shops = await Shop.find({ ownerBirthday: { $exists: true, $ne: null } });
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const upcomingBirthdays = shops.filter(shop => {
+      if (!shop.ownerBirthday) return false;
       const birthday = new Date(shop.ownerBirthday);
+      if (isNaN(birthday.getTime())) return false;
       const currentYear = today.getFullYear();
       
       let nextBirthday = new Date(currentYear, birthday.getMonth(), birthday.getDate());
@@ -77,6 +103,26 @@ router.get('/upcoming-birthdays', async (req, res) => {
   }
 });
 
+router.get('/meta/townships', async (req, res) => {
+  try {
+    const { state } = req.query;
+    const filter = { township: { $exists: true, $ne: '' } };
+    if (state) {
+      filter.state = state;
+    }
+    const townships = await Shop.distinct('township', filter);
+    // Sort alphabetically and filter out empty / null
+    const cleanTownships = townships
+      .filter(Boolean)
+      .map(t => t.trim())
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort((a, b) => a.localeCompare(b));
+    res.json(cleanTownships);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const shop = await Shop.findById(req.params.id);
@@ -91,7 +137,7 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { shopName, ownerName, phoneNumber, address, ownerBirthday, notes, location } = req.body;
+    const { shopName, ownerName, phoneNumber, state, township, address, ownerBirthday, notes, location } = req.body;
     const shop = await Shop.findById(req.params.id);
     if (!shop) {
       return res.status(404).json({ message: 'Shop not found' });
@@ -100,6 +146,8 @@ router.put('/:id', async (req, res) => {
     if (shopName !== undefined) shop.shopName = shopName;
     if (ownerName !== undefined) shop.ownerName = ownerName;
     if (phoneNumber !== undefined) shop.phoneNumber = phoneNumber;
+    if (state !== undefined) shop.state = state;
+    if (township !== undefined) shop.township = township;
     if (address !== undefined) shop.address = address;
     if (ownerBirthday !== undefined) shop.ownerBirthday = ownerBirthday ? new Date(ownerBirthday) : null;
     if (notes !== undefined) shop.notes = notes;
