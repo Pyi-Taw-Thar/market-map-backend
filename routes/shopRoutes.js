@@ -26,6 +26,8 @@ router.post('/', async (req, res) => {
   }
 });
 
+const escapeRegex = (str) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
 router.get('/', async (req, res) => {
   try {
     const { state, township, search } = req.query;
@@ -40,14 +42,34 @@ router.get('/', async (req, res) => {
     }
 
     if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      filter.$or = [
+      const trimmedSearch = search.trim();
+      const escapedSearch = escapeRegex(trimmedSearch);
+      const searchRegex = new RegExp(escapedSearch, 'i');
+
+      const orConditions = [
         { shopName: searchRegex },
         { ownerName: searchRegex },
+        { phoneNumber: searchRegex },
         { address: searchRegex },
         { township: searchRegex },
         { state: searchRegex },
+        { notes: searchRegex },
       ];
+
+      // If search query is a hex string (e.g. 6-digit ID suffix or full ObjectId), support ID matching
+      if (/^[a-fA-F0-9]{3,24}$/.test(trimmedSearch)) {
+        orConditions.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: '$_id' },
+              regex: escapedSearch,
+              options: 'i',
+            },
+          },
+        });
+      }
+
+      filter.$or = orConditions;
     }
 
     const shops = await Shop.find(filter).sort({ createdAt: -1 });
